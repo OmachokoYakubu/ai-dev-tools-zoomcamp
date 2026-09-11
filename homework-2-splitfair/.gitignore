@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.sqlite3
+*.db
+
+# Node
+node_modules/
+dist/
+.env
+
+# Testing
+.pytest_cache/
+.coverage
