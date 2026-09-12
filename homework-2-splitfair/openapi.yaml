@@ -1,0 +1,351 @@
+openapi: 3.1.0
+info:
+  title: SplitFair API
+  description: API for managing shared group expenses, calculating member balances, and recording debt settlements.
+  version: 1.0.0
+paths:
+  /api/health:
+    get:
+      summary: Health Check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/groups:
+    get:
+      summary: List all groups
+      responses:
+        '200':
+          description: List of expense groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+    post:
+      summary: Create an expense group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupCreate'
+      responses:
+        '201':
+          description: Group created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+
+  /api/groups/{group_id}:
+    get:
+      summary: Get group details with members
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Group details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetail'
+        '404':
+          description: Group not found
+
+  /api/groups/{group_id}/members:
+    post:
+      summary: Add member to group
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberCreate'
+      responses:
+        '201':
+          description: Member added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+
+  /api/groups/{group_id}/expenses:
+    get:
+      summary: List expenses for group
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of expenses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Expense'
+    post:
+      summary: Record new expense
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseCreate'
+      responses:
+        '201':
+          description: Expense recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+
+  /api/groups/{group_id}/balances:
+    get:
+      summary: Calculate member net balances and settlement plan
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Net balances and recommended settlements
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceReport'
+
+  /api/groups/{group_id}/settle:
+    post:
+      summary: Record debt settlement between two members
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettlementCreate'
+      responses:
+        '201':
+          description: Settlement recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+
+components:
+  schemas:
+    GroupCreate:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          example: Apt 4B Roommates
+        description:
+          type: string
+          example: Shared apartment expenses and groceries
+        currency:
+          type: string
+          default: USD
+          example: USD
+
+    Group:
+      type: object
+      required: [id, title, currency, created_at]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        currency:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    GroupDetail:
+      allOf:
+        - $ref: '#/components/schemas/Group'
+        - type: object
+          properties:
+            members:
+              type: array
+              items:
+                $ref: '#/components/schemas/Member'
+
+    MemberCreate:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          example: Alice
+        email:
+          type: string
+          example: alice@example.com
+
+    Member:
+      type: object
+      required: [id, group_id, name, email]
+      properties:
+        id:
+          type: integer
+        group_id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+
+    ExpenseCreate:
+      type: object
+      required: [title, amount, payer_id, split_member_ids]
+      properties:
+        title:
+          type: string
+          example: Grocery Run Trader Joe's
+        amount:
+          type: number
+          format: float
+          example: 84.50
+        category:
+          type: string
+          default: General
+          example: Groceries
+        payer_id:
+          type: integer
+          example: 1
+        split_member_ids:
+          type: array
+          items:
+            type: integer
+          example: [1, 2, 3]
+
+    Expense:
+      type: object
+      required: [id, group_id, title, amount, payer_id, created_at]
+      properties:
+        id:
+          type: integer
+        group_id:
+          type: integer
+        title:
+          type: string
+        amount:
+          type: number
+        category:
+          type: string
+        payer_id:
+          type: integer
+        payer_name:
+          type: string
+        split_member_ids:
+          type: array
+          items:
+            type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    BalanceReport:
+      type: object
+      required: [balances, settlements]
+      properties:
+        balances:
+          type: array
+          items:
+            type: object
+            properties:
+              member_id:
+                type: integer
+              member_name:
+                type: string
+              paid:
+                type: number
+              share:
+                type: number
+              net_balance:
+                type: number
+        settlements:
+          type: array
+          items:
+            type: object
+            properties:
+              from_member_id:
+                type: integer
+              from_member_name:
+                type: string
+              to_member_id:
+                type: integer
+              to_member_name:
+                type: string
+              amount:
+                type: number
+
+    SettlementCreate:
+      type: object
+      required: [from_member_id, to_member_id, amount]
+      properties:
+        from_member_id:
+          type: integer
+        to_member_id:
+          type: integer
+        amount:
+          type: number
+
+    Settlement:
+      type: object
+      required: [id, group_id, from_member_id, to_member_id, amount, created_at]
+      properties:
+        id:
+          type: integer
+        group_id:
+          type: integer
+        from_member_id:
+          type: integer
+        to_member_id:
+          type: integer
+        amount:
+          type: number
+        created_at:
+          type: string
+          format: date-time

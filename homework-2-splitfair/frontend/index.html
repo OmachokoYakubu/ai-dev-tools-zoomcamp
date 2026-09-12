@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SplitFair — Smart Group Expense Splitter</title>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Top Navbar -->
+        <header class="navbar">
+            <div class="brand">
+                <div class="logo-icon">⚖️</div>
+                <div>
+                    <h1>SplitFair</h1>
+                    <span class="badge live-badge" id="backend-status">● Connecting to API...</span>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <select id="group-select" class="select-input">
+                    <option value="">Loading Groups...</option>
+                </select>
+                <button id="btn-new-group" class="btn btn-secondary">+ New Group</button>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Container -->
+        <main class="dashboard">
+            <!-- Hero Stats / Summary -->
+            <section class="stats-row">
+                <div class="stat-card">
+                    <span class="stat-label">Total Group Expenses</span>
+                    <div class="stat-value" id="total-spent">$0.00</div>
+                    <span class="stat-desc">Across all shared activities</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Active Group Members</span>
+                    <div class="stat-value" id="member-count">0</div>
+                    <span class="stat-desc" id="member-list-preview">None added yet</span>
+                </div>
+                <div class="stat-card highlight-card">
+                    <span class="stat-label">Pending Settlements</span>
+                    <div class="stat-value" id="settlement-count">0</div>
+                    <span class="stat-desc">Optimal payments needed</span>
+                </div>
+            </section>
+
+            <!-- Two-Column Grid: Expenses & Balances -->
+            <div class="content-grid">
+                <!-- Left Column: Expenses History & Form -->
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>🧾 Group Expenses</h2>
+                        <button id="btn-open-expense-modal" class="btn btn-primary">+ Add Expense</button>
+                    </div>
+                    <div id="expense-list" class="expense-list">
+                        <div class="empty-state">No expenses recorded yet. Click "+ Add Expense" to start!</div>
+                    </div>
+                </section>
+
+                <!-- Right Column: Balance Summary & Debt Settlement -->
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>💳 Balances & Settlements</h2>
+                        <button id="btn-refresh-balances" class="btn btn-sm">↻ Refresh</button>
+                    </div>
+
+                    <div class="sub-section">
+                        <h3 class="section-subtitle">Net Balances</h3>
+                        <div id="balance-list" class="balance-list">
+                            <div class="empty-state">No balances calculated.</div>
+                        </div>
+                    </div>
+
+                    <div class="sub-section">
+                        <h3 class="section-subtitle">Suggested Payments</h3>
+                        <div id="settlement-list" class="settlement-list">
+                            <div class="empty-state">All accounts settled up! 🎉</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Modal: Add Expense -->
+        <div id="modal-expense" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3>Record New Expense</h3>
+                    <button id="modal-close" class="btn-close">&times;</button>
+                </div>
+                <form id="form-add-expense">
+                    <div class="form-group">
+                        <label for="expense-title">Description</label>
+                        <input type="text" id="expense-title" placeholder="e.g. Dinner at Olive Garden" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expense-amount">Amount ($)</label>
+                            <input type="number" id="expense-amount" step="0.01" min="0.01" placeholder="45.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-category">Category</label>
+                            <select id="expense-category">
+                                <option value="Food & Dining">Food & Dining</option>
+                                <option value="Groceries">Groceries</option>
+                                <option value="Rent & Utilities">Rent & Utilities</option>
+                                <option value="Transportation">Transportation</option>
+                                <option value="Entertainment">Entertainment</option>
+                                <option value="General">General</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="expense-payer">Paid By</label>
+                        <select id="expense-payer" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Split Between</label>
+                        <div id="split-members-container" class="checkbox-group"></div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="btn-cancel-expense" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Expense</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal: Add Group / Members -->
+        <div id="modal-group" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3>Create New Expense Group</h3>
+                    <button id="modal-group-close" class="btn-close">&times;</button>
+                </div>
+                <form id="form-add-group">
+                    <div class="form-group">
+                        <label for="group-title">Group Name</label>
+                        <input type="text" id="group-title" placeholder="e.g. Summer Roadtrip 2026" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="group-desc">Description</label>
+                        <input type="text" id="group-desc" placeholder="e.g. Shared hotel, food, and fuel costs">
+                    </div>
+                    <div class="form-group">
+                        <label for="group-members-input">Members (comma-separated names)</label>
+                        <input type="text" id="group-members-input" placeholder="Alice, Bob, Charlie" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="btn-cancel-group" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Group</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+</body>
+</html>
