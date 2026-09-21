@@ -13,8 +13,8 @@ This repository contains all coursework, projects, specifications, and deliverab
 | Module | Project Name | Description | Tech Stack | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **Module 1: AI-Native Developer Workflow** | [ChoreFlow](./homework-1-choreflow/) | Shared household chore management tool built from a vague idea through spec-driven development. | Django, Python, `uv`, SQLite | ✅ Complete |
-| **Module 2: Full-Stack App Development** | [SplitFair](./homework-2-splitfair/) | Interactive multi-party expense splitter with OpenAPI contract, reactive frontend, and FastAPI backend. | FastAPI, SQLAlchemy, SQLite, Vite/JS, `uv` | 🔥 Active |
-| **Module 3: Deployment & Delivery** | *Upcoming* | Containerized deployment, CI/CD pipelines, and cloud testing. | Docker, GitHub Actions | ⏳ Upcoming |
+| **Module 2: Full-Stack App Development** | [SplitFair](./homework-2-splitfair/) | Interactive multi-party expense splitter with OpenAPI contract, reactive frontend, and FastAPI backend. | FastAPI, SQLAlchemy, SQLite, Vite/JS, `uv` | ✅ Complete |
+| **Module 3: Test, Containerize, and Deploy** | [Agent Relay](./homework-3-agent-relay/) | Containerized FastAPI Agent Relay with PostgreSQL, multi-stage Dockerfile, Docker Compose, Kubernetes manifests, and CI/CD testing gates. | FastAPI, Docker, Compose, Kubernetes, PostgreSQL, uv, GitHub Actions | ✅ Complete |
 | **Module 4: DevOps & Observability** | *Upcoming* | Production observability, metrics, alerts, and distributed tracing. | OpenTelemetry, Prometheus, Grafana | ⏳ Upcoming |
 
 ---

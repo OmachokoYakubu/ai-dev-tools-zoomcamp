@@ -21,8 +21,8 @@ Welcome to the **AI Dev Tools Zoomcamp 2026** master playbook. This living docum
 | :--- | :--- | :--- | :--- | :--- |
 | **Kickoff** | Official Course Launch | **2026-08-31** | Completed | Setup environments & tools |
 | **Module 1** | **AI-Native Developer Workflow** | **Due: 2026-09-07** | Completed | `homework-1-choreflow` (Django + `uv`) |
-| **Module 2** | **Build & Ship an AI-Assisted Full-Stack App** | **Due: 2026-09-14** | **ACTIVE** | `homework-2-splitfair` (FastAPI + SQLite + Frontend) |
-| **Module 3** | **Test, Containerize, and Deploy** | **Due: 2026-09-21** | Upcoming | Docker, CI/CD, Containerized deployment |
+| **Module 2** | **Build & Ship an AI-Assisted Full-Stack App** | **Due: 2026-09-14** | Completed | `homework-2-splitfair` (FastAPI + SQLite + Frontend) |
+| **Module 3** | **Test, Containerize, and Deploy** | **Due: 2026-09-21** | **COMPLETED** | `homework-3-agent-relay` (FastAPI + Docker + K8s + PostgreSQL) |
 | **Module 4** | **DevOps & Observability for AI-Built Apps** | **Due: 2026-09-28** | Upcoming | Prometheus, Grafana, OpenTelemetry, Tracing |
 
 ---
@@ -96,6 +96,24 @@ ai-dev-tools-zoomcamp/
     │   └── tests/                   # Automated pytest suite
     └── docs/
         └── ai-usage-report.md       # AI agent prompting and iteration report
+├── homework-3-agent-relay/          # Module 3 Homework Project
+│   ├── Dockerfile                   # Multi-stage container build (uv, uvicorn)
+│   ├── compose.yaml                 # Multi-container stack (Agent Relay + PostgreSQL)
+│   ├── k8s/                         # Kubernetes manifests (Deployments, Services, PVC)
+│   │   ├── postgres-pvc.yaml
+│   │   ├── postgres-deployment.yaml
+│   │   ├── postgres-service.yaml
+│   │   ├── relay-deployment.yaml
+│   │   ├── relay-service.yaml
+│   │   └── kustomization.yaml
+│   ├── tests/
+│   │   └── test_integration.py      # End-to-end task exchange lifecycle test
+│   ├── main.py                      # FastAPI application and CLI worker
+│   ├── database.py                  # SQLAlchemy models (SQLite & PostgreSQL compatible)
+│   ├── storage.py                   # Atomic claim and task lifecycle persistence
+│   └── README.md                    # Setup, Docker, Compose, and K8s guides
+└── .github/workflows/
+    └── ci.yml                       # Gated test execution & container/manifest verification
 ```
 
 ---
@@ -123,3 +141,20 @@ From spec-driven design to a working full-stack application:
 Check out the code: https://github.com/OmachokoYakubu/ai-dev-tools-zoomcamp
 #AIDevTools #FastAPI #Python #DataTalksClub #LearningInPublic
 ```
+
+---
+
+## 📝 Homework 3: Agent Relay Deliverables & Submission Reference
+
+* **Course Portal Form:** [AI Dev Tools Zoomcamp Homework 3](https://courses.datatalks.club/ai-dev-tools-2026/homework/hw3)
+* **Status:** Verified & Complete
+
+| # | Question | Solution / Answer | Form Option |
+| :--- | :--- | :--- | :--- |
+| **Q1** | **How does the Agent Relay work?** | Agents claim tasks from a DB through an HTTP API | **Option 2** |
+| **Q2** | **Full Task Lifecycle Status** | `completed` | **Option 3** |
+| **Q3** | **Port Mapping in `docker run`** | `-p` | **Option 2** |
+| **Q4** | **Database Hostname in `compose.yaml`** | `postgres` | **Option 2** |
+| **Q5** | **Kubernetes Resource Type** | `Deployment` | **Option 3** |
+| **Q6** | **CI/CD Behavior on Test Failure** | Keep the existing version running and stop the deployment | **Option 2** |
+
