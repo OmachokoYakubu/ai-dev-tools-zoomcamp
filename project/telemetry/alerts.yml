@@ -1,0 +1,22 @@
+groups:
+  - name: order_tracker_alerts
+    rules:
+      - alert: HighErrorRate5xx
+        expr: rate(http_requests_total{status=~"5.."}[1m]) > 0
+        for: 30s
+        labels:
+          severity: critical
+          tier: user-impact
+        annotations:
+          summary: "Customer orders experiencing 5xx server errors"
+          description: "Elevated 5xx error rate detected on endpoint {{ $labels.path }}. Real customer order lookups or submissions are failing."
+          runbook_url: "incident-response/runbook.md"
+
+      - alert: ResponderTest
+        expr: vector(1)
+        labels:
+          severity: info
+          test: "true"
+        annotations:
+          summary: "Test notification for validating on-call responder health"
+          description: "Synthetic test ping confirming webhook connectivity without triggering incident remediation."

@@ -30,6 +30,12 @@ jobs:
           uv sync
           uv run pytest -v
 
+      - name: Test Final Project (Order Tracker & Incident Response)
+        working-directory: ./project
+        run: |
+          uv sync
+          PYTHONPATH=. uv run pytest -v
+
   build-and-verify-deployment:
     name: Build Image & Verify Manifests
     runs-on: ubuntu-latest
