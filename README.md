@@ -17,6 +17,7 @@ This repository contains all coursework, projects, specifications, and deliverab
 | **Module 3: Test, Containerize, and Deploy** | [Agent Relay](./homework-3-agent-relay/) | Containerized FastAPI Agent Relay with PostgreSQL, multi-stage Dockerfile, Docker Compose, Kubernetes manifests, and CI/CD testing gates. | FastAPI, Docker, Compose, Kubernetes, PostgreSQL, uv, GitHub Actions | ✅ Complete |
 | **Module 4: DevOps & Observability** | [Order Tracker](./homework-4-order-tracker/) | Production observability, metrics, alerts, distributed tracing, and automated incident response loop with root-cause fix. | OpenTelemetry, Prometheus, Grafana, FastAPI, uv | ✅ Complete |
 | 🏆 **Final Project (Capstone)** | **[Order Tracker & Auto-Remediation](./project/)** | **End-to-end production application with full specs, agent teams, Docker Compose, 100% test coverage, and autonomous on-call incident response agent (24/24 rubric points).** | **FastAPI, SQLite, Docker, OTel, Prometheus, Grafana, uv** | 🚀 **Submitted** |
+| 🔍 **Capstone Peer Reviews** | **[Peer Review Evaluations](./peer-review-evaluations.md)** | **Detailed rubric evaluations for 3 peer Capstone submissions (`#14512`, `#14513`, `#14514`).** | **12-Criterion Rubric Audit** | ✅ **Complete** |
 
 ---
 

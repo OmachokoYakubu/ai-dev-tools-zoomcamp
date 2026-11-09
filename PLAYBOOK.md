@@ -22,8 +22,11 @@ Welcome to the **AI Dev Tools Zoomcamp 2026** master playbook. This living docum
 | **Kickoff** | Official Course Launch | **2026-08-31** | Completed | Setup environments & tools |
 | **Module 1** | **AI-Native Developer Workflow** | **Due: 2026-09-07** | Completed | `homework-1-choreflow` (Django + `uv`) |
 | **Module 2** | **Build & Ship an AI-Assisted Full-Stack App** | **Due: 2026-09-14** | Completed | `homework-2-splitfair` (FastAPI + SQLite + Frontend) |
-| **Module 3** | **Test, Containerize, and Deploy** | **Due: 2026-09-21** | **COMPLETED** | `homework-3-agent-relay` (FastAPI + Docker + K8s + PostgreSQL) |
-| **Module 4** | **DevOps & Observability for AI-Built Apps** | **Due: 2026-09-28** | Upcoming | Prometheus, Grafana, OpenTelemetry, Tracing |
+| **Module 3** | **Test, Containerize, and Deploy** | **Due: 2026-09-21** | Completed | `homework-3-agent-relay` (FastAPI + Docker + K8s + PostgreSQL) |
+| **Module 4** | **DevOps & Observability for AI-Built Apps** | **Due: 2026-09-30** | Completed | `homework-4-order-tracker` (Prometheus, Grafana, OTel, Responder) |
+| **Module 5** | **Coding Agent Building Blocks** | **Self-Directed** | Completed | Reusable skills, subagents & modular `AGENTS.md` |
+| **Capstone** | **Final Project (Project 1)** | **Due: 2026-10-26** | **Submitted** | `project/` (Order Tracker & Autonomous Incident Responder) |
+| **Peer Review**| **Capstone Project 1 Peer Evaluations** | **Due: 2026-11-05** | **Completed** | `peer-review-evaluations.md` (3 peer submissions reviewed) |
 
 ---
 
