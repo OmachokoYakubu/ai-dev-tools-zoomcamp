@@ -1,0 +1,72 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        { "expr": "sum(rate(shelfsync_http_requests_total[1m])) by (status_class)", "legendFormat": "{{status_class}}", "refId": "A" }
+      ],
+      "title": "HTTP Traffic by Status Class (req/s)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "id": 2,
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(shelfsync_http_request_duration_seconds_bucket[2m])) by (le, route))", "legendFormat": "p95 {{route}}", "refId": "A" }
+      ],
+      "title": "User Journey p95 Latency by Route",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "id": 3,
+      "targets": [
+        { "expr": "sum(increase(shelfsync_user_impact_5xx_total[5m]))", "legendFormat": "5xx User Impact Failures", "refId": "A" }
+      ],
+      "title": "User-Impact 5xx SLO Breaches (5m)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 4,
+      "targets": [
+        { "expr": "sum(increase(shelfsync_restock_events_total[15m])) by (stage, outcome)", "legendFormat": "{{stage}} → {{outcome}}", "refId": "A" }
+      ],
+      "title": "Key User Journey Funnel (SKU Create → Drawdown → Restock → Fulfill)",
+      "type": "barchart"
+    },
+    {
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 5,
+      "targets": [
+        { "limit": 20, "queryType": "traceql", "query": "{ resource.service.name = \"shelfsync-app\" }", "refId": "A" }
+      ],
+      "title": "Distributed OpenTelemetry Traces (Tempo — Correlated by trace_id)",
+      "type": "table"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": ["shelfsync", "otel", "slo"],
+  "templating": { "list": [] },
+  "time": { "from": "now-15m", "to": "now" },
+  "title": "ShelfSync User Journey SLOs & Correlated Traces",
+  "uid": "shelfsync-slo-v1",
+  "version": 1
+}

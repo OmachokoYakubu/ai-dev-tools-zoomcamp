@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShelfSync — Cold-Chain Inventory & Autonomous Restock Operations</title>
+  <style>
+    :root {
+      --bg: #080f1e;
+      --card: #111a2e;
+      --border: #1e2d4a;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --cyan: #38bdf8;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --purple: #a78bfa;
+    }
+    * { box-sizing: border-box; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; background: radial-gradient(circle at top right, #0f2942 0%, var(--bg) 55%); color: var(--text); min-height: 100vh; padding: 24px 18px; }
+    .wrap { max-width: 1200px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+    .brand h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.02em; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.88rem; }
+    .telemetry-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .pill { padding: 5px 11px; border-radius: 999px; font-size: 0.76rem; font-weight: 600; border: 1px solid var(--border); background: #0f172a; color: var(--cyan); }
+    .pill-healthy { color: #34d399; border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.12); }
+    .pill-degraded { color: #f87171; border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.16); }
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+    @media (max-width: 820px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+    .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .kpi-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .kpi-val { font-size: 1.95rem; font-weight: 800; margin-top: 6px; }
+    .main-grid { display: grid; grid-template-columns: 1.35fr 0.95fr; gap: 18px; }
+    @media (max-width: 980px) { .main-grid { grid-template-columns: 1fr; } }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 18px; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
+    .card h2 { margin: 0; font-size: 1.02rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid rgba(30,45,74,0.65); }
+    th { color: var(--muted); font-weight: 600; font-size: 0.76rem; text-transform: uppercase; }
+    .status-tag { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+    .st-healthy, .st-fulfilled { background: rgba(16,185,129,0.18); color: #34d399; }
+    .st-low_stock, .st-requested { background: rgba(245,158,11,0.2); color: #fbbf24; }
+    .st-critical_out { background: rgba(239,68,68,0.22); color: #f87171; }
+    .st-approved { background: rgba(56,189,248,0.2); color: #38bdf8; }
+    button { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 7px; padding: 6px 10px; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+    button:hover { border-color: var(--cyan); color: #fff; }
+    .btn-primary { background: linear-gradient(135deg, #0284c7, #2563eb); border: none; color: #fff; padding: 9px 14px; }
+    .btn-warn { background: rgba(239,68,68,0.16); border-color: rgba(239,68,68,0.45); color: #fca5a5; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    input, select { width: 100%; background: #09101f; color: var(--text); border: 1px solid #293b5c; border-radius: 7px; padding: 7px 9px; font-size: 0.84rem; }
+    label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+    .toast { padding: 10px 12px; border-radius: 8px; font-size: 0.82rem; margin-bottom: 14px; background: rgba(56,189,248,0.13); border: 1px solid rgba(56,189,248,0.35); display: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>❄️ ShelfSync Cold-Chain & Clinic Inventory</h1>
+        <p>Contract-First Full-Stack Inventory, Restock State Machine & Correlated OpenTelemetry Workspace</p>
+      </div>
+      <div class="telemetry-bar">
+        <span id="mode-pill" class="pill pill-healthy">Connecting...</span>
+        <span id="gateway-pill" class="pill pill-healthy">Gateway: healthy</span>
+        <span id="trace-pill" class="pill">X-Trace-Id: —</span>
+      </div>
+    </header>
+
+    <div id="toast" class="toast"></div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label">Tracked SKUs</div><div class="kpi-val" id="kpi-total">0</div></div>
+      <div class="kpi"><div class="kpi-label">Low / Stockout Alerts</div><div class="kpi-val" style="color:#fbbf24" id="kpi-low">0</div></div>
+      <div class="kpi"><div class="kpi-label">Open Restock Orders</div><div class="kpi-val" style="color:#38bdf8" id="kpi-open">0</div></div>
+      <div class="kpi"><div class="kpi-label">Fulfilled Restocks</div><div class="kpi-val" style="color:#34d399" id="kpi-done">0</div></div>
+    </div>
+
+    <div class="main-grid">
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <h2>Clinic & Cold-Chain SKU Catalog</h2>
+            <div>
+              <select id="filter-low" onchange="refreshAll()" style="width:auto;">
+                <option value="false">All SKUs</option>
+                <option value="true">Low / Critical Only</option>
+              </select>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>SKU</th><th>Item</th><th>Temp</th><th>Qty / Min</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="items-body"></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Register New Inventory SKU</h2>
+          </div>
+          <form id="create-item-form">
+            <div class="form-row">
+              <div><label>SKU Code</label><input id="f-sku" placeholder="VAC-RSV24" required /></div>
+              <div><label>Item Name</label><input id="f-name" placeholder="RSV Monoclonal Vial" required /></div>
+            </div>
+            <div class="form-row">
+              <div>
+                <label>Category</label>
+                <select id="f-cat">
+                  <option value="cold_chain">cold_chain</option>
+                  <option value="reagent">reagent</option>
+                  <option value="consumable">consumable</option>
+                </select>
+              </div>
+              <div><label>Supplier Email (Redacted in OTel)</label><input id="f-email" type="email" value="orders@biocold.example" required /></div>
+            </div>
+            <div class="form-row">
+              <div><label>Initial Quantity</label><input id="f-qty" type="number" value="12" min="0" required /></div>
+              <div><label>Reorder Threshold & Temp (°C)</label>
+                <div style="display:flex;gap:6px;">
+                  <input id="f-thresh" type="number" value="15" min="1" required />
+                  <input id="f-temp" type="number" value="4" step="0.5" required />
+                </div>
+              </div>
+            </div>
+            <button class="btn-primary" type="submit">Add SKU to Catalog</button>
+          </form>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <h2>Restock Order Pipeline</h2>
+          </div>
+          <form id="restock-form" style="margin-bottom:14px;">
+            <div class="form-row">
+              <div><label>Target SKU</label><input id="r-sku" value="EPI-PEN02" required /></div>
+              <div><label>Order Quantity</label><input id="r-qty" type="number" value="20" min="1" required /></div>
+            </div>
+            <div class="form-row">
+              <div><label>Requested By</label><input id="r-by" value="Clinician A. Patel" required /></div>
+              <div style="display:flex;align-items:flex-end;"><button class="btn-primary" style="width:100%" type="submit">Request Restock</button></div>
+            </div>
+          </form>
+          <table>
+            <thead>
+              <tr><th>#</th><th>SKU</th><th>Qty</th><th>Status</th><th>Advance</th></tr>
+            </thead>
+            <tbody id="restocks-body"></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>SRE Fault Injection & Autonomous On-Call Demo</h2>
+          </div>
+          <p style="font-size:0.81rem;color:var(--muted);margin-top:0;">
+            Simulate a degraded upstream supplier gateway (`HTTP 503` on restock creation) and trigger the On-Call Responder rollback.
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <button class="btn-warn" type="button" onclick="setGateway('degraded_timeout')">Inject 503 Gateway Fault</button>
+            <button type="button" onclick="remediateNow()">Run On-Call Agent Rollback</button>
+          </div>
+          <div id="ops-audit-box" style="background:#09101f;border:1px solid #1e2d4a;border-radius:9px;padding:10px 12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:0.75rem;color:#cbd5e1;line-height:1.5;">
+            <div><strong style="color:#38bdf8;">OTel &amp; On-Call Diagnostics</strong> — Zero-PII Redaction: <span style="color:#34d399;">ACTIVE ([REDACTED_EMAIL])</span></div>
+            <div id="ops-diag-line" style="color:#94a3b8;margin-top:4px;">Loading /ops/diagnostics telemetry...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let demoFallback = false;
+    const demoState = {
+      gateway: 'healthy',
+      items: [
+        { sku: 'VAC-FLU26', name: 'Quadrivalent Influenza Vaccine (10-Dose Vial)', category: 'cold_chain', quantity: 14, reorder_threshold: 20, storage_temp_c: 4.0 },
+        { sku: 'INS-GLAR10', name: 'Insulin Glargine 100U/mL Pens', category: 'cold_chain', quantity: 32, reorder_threshold: 15, storage_temp_c: 4.0 },
+        { sku: 'PCR-KIT96', name: 'Respiratory Multiplex PCR Assay Plate', category: 'reagent', quantity: 6, reorder_threshold: 12, storage_temp_c: -20.0 },
+        { sku: 'STR-GLV100', name: 'Sterile Nitrile Exam Gloves (Box/100)', category: 'consumable', quantity: 48, reorder_threshold: 20, storage_temp_c: 22.0 },
+        { sku: 'EPI-PEN02', name: 'Epinephrine Auto-Injector 0.3mg Twin-Pack', category: 'cold_chain', quantity: 0, reorder_threshold: 8, storage_temp_c: 20.0 }
+      ],
+      restocks: [
+        { id: 2, sku: 'EPI-PEN02', order_qty: 16, requested_by: 'Lead Pharm. Tunde', status: 'requested' },
+        { id: 1, sku: 'VAC-FLU26', order_qty: 30, requested_by: 'Dr. Maya Lin', status: 'approved' }
+      ]
+    };
+
+    function stockStatus(q, t) { return q <= 0 ? 'critical_out' : (q <= t ? 'low_stock' : 'healthy'); }
+    function notify(msg, isErr=false) {
+      const el = document.getElementById('toast');
+      el.style.display = 'block';
+      el.style.borderColor = isErr ? 'rgba(239,68,68,0.5)' : 'rgba(56,189,248,0.4)';
+      el.textContent = msg;
+    }
+
+    async function apiCall(path, opts={}) {
+      if (!demoFallback) {
+        try {
+          const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+          const tid = res.headers.get('X-Trace-Id');
+          if (tid) document.getElementById('trace-pill').textContent = 'X-Trace-Id: ' + tid.slice(0, 16) + '…';
+          if (res.headers.get('content-type')?.includes('application/json')) {
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
+            return data;
+          }
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+        } catch (err) {
+          if (path === '/api/summary') {
+            demoFallback = true;
+          } else {
+            throw err;
+          }
+        }
+      }
+      // Browser interactive demo mode (for static GitHub Pages preview)
+      document.getElementById('trace-pill').textContent = 'X-Trace-Id: ' + Math.random().toString(16).slice(2, 18) + '…';
+      if (path === '/api/summary') {
+        const low = demoState.items.filter(i => stockStatus(i.quantity, i.reorder_threshold) !== 'healthy').length;
+        const open = demoState.restocks.filter(r => r.status !== 'fulfilled').length;
+        return { total_skus: demoState.items.length, attention_needed_skus: low, open_restock_orders: open, fulfilled_restock_orders: demoState.restocks.length - open, supplier_gateway_mode: demoState.gateway };
+      }
+      if (path.startsWith('/api/items') && (!opts.method || opts.method === 'GET')) {
+        const lowOnly = path.includes('low_stock_only=true');
+        return demoState.items.map(i => ({ ...i, stock_status: stockStatus(i.quantity, i.reorder_threshold) })).filter(i => !lowOnly || i.stock_status !== 'healthy');
+      }
+      if (path === '/api/items' && opts.method === 'POST') {
+        const b = JSON.parse(opts.body);
+        demoState.items.push(b);
+        return { ...b, stock_status: stockStatus(b.quantity, b.reorder_threshold) };
+      }
+      if (path.endsWith('/drawdown')) {
+        const sku = path.split('/')[3];
+        const b = JSON.parse(opts.body);
+        const it = demoState.items.find(x => x.sku === sku);
+        if (b.units > it.quantity) throw new Error('Insufficient stock');
+        it.quantity -= b.units;
+        return it;
+      }
+      if (path === '/api/restocks' && (!opts.method || opts.method === 'GET')) return demoState.restocks;
+      if (path === '/api/restocks' && opts.method === 'POST') {
+        if (demoState.gateway !== 'healthy') throw new Error('503: Upstream supplier dispatch gateway timed out');
+        const b = JSON.parse(opts.body);
+        const rec = { id: demoState.restocks.length + 1, ...b, status: 'requested' };
+        demoState.restocks.unshift(rec);
+        return rec;
+      }
+      if (path.includes('/transition')) {
+        const id = Number(path.split('/')[3]);
+        const b = JSON.parse(opts.body);
+        const ord = demoState.restocks.find(r => r.id === id);
+        ord.status = b.target_status;
+        if (b.target_status === 'fulfilled') {
+          const it = demoState.items.find(x => x.sku === ord.sku);
+          if (it) it.quantity += ord.order_qty;
+        }
+        return { restock: ord };
+      }
+      if (path === '/ops/diagnostics') {
+        return {
+          service: 'shelfsync-app',
+          database: 'connected (preview)',
+          runtime_config: { supplier_gateway_mode: demoState.gateway, remediation_count: demoState.remediations || 0 },
+          recent_5xx_traces: demoState.recent5xx || []
+        };
+      }
+      if (path === '/ops/runtime-config') { demoState.gateway = JSON.parse(opts.body).supplier_gateway_mode; return {}; }
+      if (path === '/ops/remediate') { demoState.gateway = 'healthy'; demoState.remediations = (demoState.remediations || 0) + 1; return {}; }
+    }
+
+    async function refreshAll() {
+      const lowOnly = document.getElementById('filter-low').value;
+      const summary = await apiCall('/api/summary');
+      const [items, restocks, diag] = await Promise.all([
+        apiCall('/api/items?low_stock_only=' + lowOnly),
+        apiCall('/api/restocks'),
+        apiCall('/ops/diagnostics')
+      ]);
+      const modePill = document.getElementById('mode-pill');
+      modePill.textContent = demoFallback ? 'Interactive Cloud Preview' : 'Live FastAPI + DB';
+      const gwPill = document.getElementById('gateway-pill');
+      gwPill.textContent = 'Gateway: ' + summary.supplier_gateway_mode;
+      gwPill.className = 'pill ' + (summary.supplier_gateway_mode === 'healthy' ? 'pill-healthy' : 'pill-degraded');
+
+      document.getElementById('kpi-total').textContent = summary.total_skus;
+      document.getElementById('kpi-low').textContent = summary.attention_needed_skus;
+      document.getElementById('kpi-open').textContent = summary.open_restock_orders;
+      document.getElementById('kpi-done').textContent = summary.fulfilled_restock_orders;
+
+      document.getElementById('items-body').innerHTML = items.map(i => `
+        <tr>
+          <td><strong>${i.sku}</strong></td>
+          <td>${i.name}</td>
+          <td>${i.storage_temp_c}°C</td>
+          <td><strong>${i.quantity}</strong> / ${i.reorder_threshold}</td>
+          <td><span class="status-tag st-${i.stock_status}">${i.stock_status.replace('_',' ')}</span></td>
+          <td>
+            <button onclick="quickDrawdown('${i.sku}')">-2 Use</button>
+            <button onclick="prefillRestock('${i.sku}')">Restock</button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('restocks-body').innerHTML = restocks.map(r => {
+        const nextBtn = r.status === 'requested'
+          ? `<button onclick="advanceRestock(${r.id}, 'approved')">Approve</button>`
+          : (r.status === 'approved' ? `<button onclick="advanceRestock(${r.id}, 'fulfilled')">Fulfill +Stock</button>` : '✓ Done');
+        return `
+          <tr>
+            <td>#${r.id}</td>
+            <td><strong>${r.sku}</strong></td>
+            <td>+${r.order_qty}</td>
+            <td><span class="status-tag st-${r.status}">${r.status}</span></td>
+            <td>${nextBtn}</td>
+          </tr>
+        `;
+      }).join('');
+
+      if (diag && diag.runtime_config) {
+        const traces = diag.recent_5xx_traces || [];
+        const latest5xx = traces.length ? `Latest 5xx trace_id=${traces[traces.length - 1].trace_id.slice(0, 16)}… (${traces[traces.length - 1].status_code})` : '5xx error budget: 100% healthy (0 recent 5xx spans)';
+        document.getElementById('ops-diag-line').innerHTML =
+          `DB: <span style="color:#34d399;">${diag.database}</span> · Auto-Remediations: <strong>${diag.runtime_config.remediation_count}</strong><br/>${latest5xx}`;
+      }
+    }
+
+    async function quickDrawdown(sku) {
+      try {
+        await apiCall(`/api/items/${sku}/drawdown`, { method: 'POST', body: JSON.stringify({ units: 2, reason: 'Clinic shift dispensing' }) });
+        notify(`Recorded 2-unit drawdown for ${sku}`);
+        refreshAll();
+      } catch (e) { notify(e.message, true); }
+    }
+
+    function prefillRestock(sku) { document.getElementById('r-sku').value = sku; }
+
+    async function advanceRestock(id, target_status) {
+      try {
+        await apiCall(`/api/restocks/${id}/transition`, { method: 'PATCH', body: JSON.stringify({ target_status }) });
+        notify(`Restock #${id} transitioned to ${target_status}`);
+        refreshAll();
+      } catch (e) { notify(e.message, true); }
+    }
+
+    async function setGateway(mode) {
+      await apiCall('/ops/runtime-config', { method: 'PUT', body: JSON.stringify({ supplier_gateway_mode: mode }) });
+      notify(`Runtime supplier_gateway_mode set to ${mode}`, mode !== 'healthy');
+      refreshAll();
+    }
+
+    async function remediateNow() {
+      await apiCall('/ops/remediate', { method: 'POST', body: JSON.stringify({ action: 'rollback_supplier_gateway', triggered_by: 'oncall-ui-trigger', reason: 'Manual or alert-driven rollback' }) });
+      notify('On-Call Remediation applied: supplier_gateway_mode restored to healthy!');
+      refreshAll();
+    }
+
+    document.getElementById('create-item-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await apiCall('/api/items', {
+          method: 'POST',
+          body: JSON.stringify({
+            sku: document.getElementById('f-sku').value.trim().toUpperCase(),
+            name: document.getElementById('f-name').value.trim(),
+            category: document.getElementById('f-cat').value,
+            quantity: Number(document.getElementById('f-qty').value),
+            reorder_threshold: Number(document.getElementById('f-thresh').value),
+            storage_temp_c: Number(document.getElementById('f-temp').value),
+            supplier_email: document.getElementById('f-email').value.trim()
+          })
+        });
+        notify('New SKU added and persisted');
+        e.target.reset();
+        refreshAll();
+      } catch (err) { notify(err.message, true); }
+    });
+
+    document.getElementById('restock-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await apiCall('/api/restocks', {
+          method: 'POST',
+          body: JSON.stringify({
+            sku: document.getElementById('r-sku').value.trim().toUpperCase(),
+            order_qty: Number(document.getElementById('r-qty').value),
+            requested_by: document.getElementById('r-by').value.trim()
+          })
+        });
+        notify('Restock order submitted on traced user journey');
+        refreshAll();
+      } catch (err) { notify(err.message, true); }
+    });
+
+    window.addEventListener('DOMContentLoaded', refreshAll);
+  </script>
+</body>
+</html>

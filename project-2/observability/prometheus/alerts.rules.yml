@@ -1,0 +1,25 @@
+groups:
+  - name: shelfsync_user_impact_slos
+    interval: 5s
+    rules:
+      - alert: ShelfSyncRestockJourneyHigh5xxRate
+        expr: sum(rate(shelfsync_user_impact_5xx_total[1m])) > 0.01
+        for: 5s
+        labels:
+          severity: critical
+          service: shelfsync-app
+          journey: restock_order
+        annotations:
+          summary: "User-impacting 5xx failures detected on ShelfSync Restock journey"
+          description: "Technicians are receiving 5xx responses while submitting restock orders (4xx client errors excluded)."
+
+      - alert: ShelfSyncRestockHighP95Latency
+        expr: histogram_quantile(0.95, sum(rate(shelfsync_http_request_duration_seconds_bucket{route="/api/restocks"}[2m])) by (le)) > 1.5
+        for: 30s
+        labels:
+          severity: warning
+          service: shelfsync-app
+          journey: restock_order
+        annotations:
+          summary: "Elevated p95 latency on /api/restocks (> 1.5s)"
+          description: "95th percentile restock order submission latency exceeded 1.5 seconds."

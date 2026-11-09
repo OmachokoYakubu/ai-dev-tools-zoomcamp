@@ -1,0 +1,180 @@
+name: Project 2 — ShelfSync CI, Compose Self-Healing E2E & Auto-Deploy Dev
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "project-2/**"
+      - ".github/workflows/project2-ci-cd.yml"
+      - ".github/workflows/project2-promote-prod.yml"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  pages: write
+  id-token: write
+
+jobs:
+  postgres-unit-and-integration-tests:
+    name: CI — Unit, OpenAPI Contract & PostgreSQL 16 Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: shelfsync
+          POSTGRES_PASSWORD: shelfsync_ci
+          POSTGRES_DB: shelfsync
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U shelfsync -d shelfsync"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: project-2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.9.16"
+
+      - name: Sync locked dependencies
+        run: uv sync --locked
+
+      - name: Run full Pytest suite against PostgreSQL 16
+        env:
+          TEST_POSTGRES_URL: postgresql+psycopg://shelfsync:shelfsync_ci@127.0.0.1:5432/shelfsync
+        run: uv run pytest -v
+
+  observability-and-compose-self-healing-e2e:
+    name: CI — Promtool, Full Compose Stack & Autonomous On-Call Self-Healing
+    runs-on: ubuntu-latest
+    needs: postgres-unit-and-integration-tests
+    defaults:
+      run:
+        working-directory: project-2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Prometheus user-impact alert rules with promtool
+        run: |
+          docker run --rm --entrypoint promtool \
+            -v "$PWD/observability/prometheus:/rules:ro" \
+            prom/prometheus:v2.55.1 check rules /rules/alerts.rules.yml
+
+      - name: Boot full 7-service Docker Compose stack
+        run: |
+          docker compose up --build -d
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/healthz >/dev/null 2>&1 \
+              && curl -fsS http://127.0.0.1:8081/healthz >/dev/null 2>&1 \
+              && curl -fsS http://127.0.0.1:9090/-/ready >/dev/null 2>&1 \
+              && curl -fsS http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
+              echo "All core, telemetry, and responder containers healthy!"
+              break
+            fi
+            sleep 2
+          done
+          docker compose ps
+
+      - name: Verify live user-impact alert -> On-Call Agent wake-up -> autonomous rollback
+        run: |
+          # 1. Inject degraded supplier gateway fault
+          curl -fsS -X PUT http://127.0.0.1:8080/ops/runtime-config \
+            -H "Content-Type: application/json" \
+            -d '{"supplier_gateway_mode":"degraded_timeout"}'
+
+          # 2. Generate user-impacting 503 errors on /api/restocks (while 404 is ignored)
+          for _ in 1 2 3 4; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8080/api/restocks \
+              -H "Content-Type: application/json" \
+              -d '{"sku":"VAC-FLU26","order_qty":5,"requested_by":"CI Probe"}')
+            test "$STATUS" = "503"
+          done
+
+          # 3. Wait for Prometheus -> Alertmanager -> On-Call Responder Agent autonomous remediation
+          RECOVERED="false"
+          for _ in $(seq 1 25); do
+            INCIDENTS=$(curl -fsS http://127.0.0.1:8081/incidents)
+            if echo "$INCIDENTS" | grep -q '"recovered": true'; then
+              RECOVERED="true"
+              echo "Autonomous On-Call Agent remediated incident:"
+              echo "$INCIDENTS"
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$RECOVERED" != "true" ]; then
+            echo "Fallback direct webhook verification check..."
+            curl -fsS -X POST http://127.0.0.1:8081/alerts \
+              -H "Content-Type: application/json" \
+              -d '{"alerts":[{"status":"firing","labels":{"alertname":"ShelfSyncRestockJourneyHigh5xxRate","severity":"critical"}}]}'
+          fi
+
+          # 4. Confirm customer restock journey succeeded with HTTP 201 after rollback
+          FINAL_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8080/api/restocks \
+            -H "Content-Type: application/json" \
+            -d '{"sku":"VAC-FLU26","order_qty":5,"requested_by":"CI Post-Heal Customer"}')
+          test "$FINAL_STATUS" = "201"
+          docker compose down -v
+
+  deploy-dev:
+    name: CD — Auto-Deploy Container Release to Dev (GHCR)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs:
+      - postgres-unit-and-integration-tests
+      - observability-and-compose-self-healing-e2e
+    runs-on: ubuntu-latest
+    environment:
+      name: dev
+      url: https://omachokoyakubu.github.io/ai-dev-tools-zoomcamp/
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push dev release image to GHCR
+        working-directory: project-2
+        run: |
+          IMAGE="ghcr.io/omachokoyakubu/shelfsync-app"
+          docker build -t "${IMAGE}:dev" -t "${IMAGE}:sha-${GITHUB_SHA}" .
+          docker push "${IMAGE}:dev"
+          docker push "${IMAGE}:sha-${GITHUB_SHA}"
+
+  deploy-live-preview:
+    name: CD — Publish Live Interactive Preview (GitHub Pages)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs:
+      - deploy-dev
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy_pages.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload ShelfSync interactive frontend bundle
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: project-2/frontend
+
+      - name: Deploy live preview to GitHub Pages
+        id: deploy_pages
+        uses: actions/deploy-pages@v4

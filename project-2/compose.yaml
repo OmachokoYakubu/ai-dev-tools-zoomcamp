@@ -1,0 +1,106 @@
+name: shelfsync
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: shelfsync
+      POSTGRES_PASSWORD: shelfsync_dev_password
+      POSTGRES_DB: shelfsync
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shelfsync -d shelfsync"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/tempo/tempo.yaml:/etc/tempo.yaml:ro
+    ports:
+      - "3200:3200"
+      - "4318:4318"
+
+  shelfsync-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: shelfsync-app:local
+    environment:
+      DATABASE_URL: postgresql+psycopg://shelfsync:shelfsync_dev_password@postgres:5432/shelfsync
+      OTEL_SERVICE_NAME: shelfsync-app
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      APP_ENV: compose
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+
+  oncall-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: shelfsync-app:local
+    command: ["uvicorn", "oncall_agent.responder:responder_app", "--host", "0.0.0.0", "--port", "8081"]
+    environment:
+      SHELFSYNC_APP_URL: http://shelfsync-app:8080
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/healthz', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      shelfsync-app:
+        condition: service_healthy
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
+    volumes:
+      - ./observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - "9093:9093"
+    depends_on:
+      - oncall-agent
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/alerts.rules.yml:/etc/prometheus/alerts.rules.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - shelfsync-app
+      - alertmanager
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - tempo
+
+volumes:
+  postgres_data:

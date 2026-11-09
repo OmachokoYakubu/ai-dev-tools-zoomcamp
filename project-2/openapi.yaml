@@ -1,0 +1,207 @@
+openapi: 3.1.0
+info:
+  title: ShelfSync Inventory & Autonomous Operations API
+  version: 1.0.0
+  description: Contract-first REST API for clinic cold-chain inventory management, restock lifecycle automation, correlated OpenTelemetry observability, and autonomous incident remediation.
+servers:
+  - url: http://localhost:8080
+    description: Local Docker Compose stack
+paths:
+  /healthz:
+    get:
+      summary: Liveness and database connectivity check
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service and database healthy
+  /metrics:
+    get:
+      summary: Prometheus scrape endpoint
+      operationId: getMetrics
+      responses:
+        "200":
+          description: Prometheus text exposition format
+  /api/summary:
+    get:
+      summary: Aggregate KPI dashboard summary
+      operationId: getSummary
+      responses:
+        "200":
+          description: Inventory and restock summary counts
+  /api/items:
+    get:
+      summary: List all inventory SKUs
+      operationId: listItems
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: low_stock_only
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Array of inventory items
+    post:
+      summary: Register a new inventory SKU
+      operationId: createItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemCreate"
+      responses:
+        "201":
+          description: Created SKU
+        "409":
+          description: Duplicate SKU conflict
+  /api/items/{sku}/drawdown:
+    post:
+      summary: Record stock usage drawdown for a SKU
+      operationId: drawdownItem
+      parameters:
+        - name: sku
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DrawdownRequest"
+      responses:
+        "200":
+          description: Updated SKU after drawdown
+        "404":
+          description: SKU not found
+        "422":
+          description: Insufficient stock or invalid units
+  /api/restocks:
+    get:
+      summary: List restock orders
+      operationId: listRestocks
+      responses:
+        "200":
+          description: Array of restock orders
+    post:
+      summary: Create a new restock order on the key user journey
+      operationId: createRestock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestockCreate"
+      responses:
+        "201":
+          description: Created restock order
+        "404":
+          description: SKU not found
+        "503":
+          description: Upstream supplier gateway degraded (triggers user-impact alert)
+  /api/restocks/{restock_id}/transition:
+    patch:
+      summary: Advance restock order status (requested -> approved -> fulfilled)
+      operationId: transitionRestock
+      parameters:
+        - name: restock_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestockTransition"
+      responses:
+        "200":
+          description: Updated restock order and replenished SKU
+        "404":
+          description: Restock order not found
+        "422":
+          description: Invalid state transition
+  /ops/diagnostics:
+    get:
+      summary: Bounded read-only diagnostic snapshot for the On-Call Responder Agent
+      operationId: getDiagnostics
+      responses:
+        "200":
+          description: Current runtime config, error counters, and redacted recent error traces
+  /ops/runtime-config:
+    put:
+      summary: Update runtime configuration (used for controlled fault injection in staging/tests)
+      operationId: updateRuntimeConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RuntimeConfigUpdate"
+      responses:
+        "200":
+          description: Updated runtime config
+  /ops/remediate:
+    post:
+      summary: Bounded self-healing rollback endpoint invoked by the On-Call Responder Agent
+      operationId: remediateRuntime
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemediationAction"
+      responses:
+        "200":
+          description: Runtime rolled back to known-good configuration
+components:
+  schemas:
+    ItemCreate:
+      type: object
+      required: [sku, name, category, quantity, reorder_threshold, storage_temp_c, supplier_email]
+      properties:
+        sku: { type: string, minLength: 3, maxLength: 32 }
+        name: { type: string, minLength: 2, maxLength: 120 }
+        category: { type: string, enum: [cold_chain, reagent, consumable] }
+        quantity: { type: integer, minimum: 0 }
+        reorder_threshold: { type: integer, minimum: 1 }
+        storage_temp_c: { type: number }
+        supplier_email: { type: string }
+    DrawdownRequest:
+      type: object
+      required: [units, reason]
+      properties:
+        units: { type: integer, minimum: 1 }
+        reason: { type: string, minLength: 2, maxLength: 120 }
+    RestockCreate:
+      type: object
+      required: [sku, order_qty, requested_by]
+      properties:
+        sku: { type: string }
+        order_qty: { type: integer, minimum: 1 }
+        requested_by: { type: string, minLength: 2, maxLength: 80 }
+    RestockTransition:
+      type: object
+      required: [target_status]
+      properties:
+        target_status: { type: string, enum: [approved, fulfilled] }
+    RuntimeConfigUpdate:
+      type: object
+      required: [supplier_gateway_mode]
+      properties:
+        supplier_gateway_mode: { type: string, enum: [healthy, degraded_timeout] }
+    RemediationAction:
+      type: object
+      required: [action, triggered_by, reason]
+      properties:
+        action: { type: string, enum: [rollback_supplier_gateway] }
+        triggered_by: { type: string }
+        reason: { type: string }

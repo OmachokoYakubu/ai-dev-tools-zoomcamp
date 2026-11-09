@@ -1,0 +1,56 @@
+name: Project 2 — Manual Promotion to Production (ShelfSync)
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_tag:
+        description: "Verified GHCR image tag from dev to promote (e.g., dev or sha-...)"
+        required: true
+        default: "dev"
+        type: string
+      release_version:
+        description: "Semantic production release tag"
+        required: true
+        default: "v1.0.0"
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  promote-to-production:
+    name: CD — Manual Gate & Safe Promotion to Production
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull candidate image, smoke-test, and promote to :prod
+        run: |
+          IMAGE="ghcr.io/omachokoyakubu/shelfsync-app"
+          CANDIDATE="${IMAGE}:${{ inputs.source_tag }}"
+          docker pull "${CANDIDATE}"
+
+          # Pre-promotion container smoke check
+          docker run -d --name shelfsync-prod-gate -p 18080:8080 "${CANDIDATE}"
+          for _ in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:18080/healthz >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:18080/api/summary
+          docker rm -f shelfsync-prod-gate
+
+          # Promote verified artifact to :prod and immutable release version
+          docker tag "${CANDIDATE}" "${IMAGE}:prod"
+          docker tag "${CANDIDATE}" "${IMAGE}:${{ inputs.release_version }}"
+          docker push "${IMAGE}:prod"
+          docker push "${IMAGE}:${{ inputs.release_version }}"
