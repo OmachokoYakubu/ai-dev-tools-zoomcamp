@@ -27,8 +27,8 @@ Welcome to the **AI Dev Tools Zoomcamp 2026** master playbook. This living docum
 | **Module 5** | **Coding Agent Building Blocks** | **Self-Directed** | Completed | Reusable skills, subagents & modular `AGENTS.md` |
 | **Capstone 1** | **Final Project (Project 1)** | **Due: 2026-10-26** | **Submitted** | `project/` (Order Tracker & Autonomous Incident Responder) |
 | **Peer Review 1**| **Capstone Project 1 Peer Evaluations** | **Due: 2026-11-05** | **Completed** | `peer-review-evaluations.md` (3 peer submissions reviewed) |
-| **Capstone 2** | **Final Project (Project 2 — ShelfSync)** | **Due: 2026-11-16 23:00** | **Ready / Deployed** | `project-2/` (Cold-Chain Inventory, PostgreSQL 16, OTel/Tempo, Staged CI/CD & On-Call Agent — 24/24 rubric) |
-| **Peer Review 2**| **Capstone Project 2 Peer Evaluations** | **Due: 2026-11-23 23:00** | **Upcoming** | Evaluate 3 peer Project 2 submissions on portal |
+| **Capstone 2** | **Final Project (Project 2 — ShelfSync)** | **Due: 2026-11-16 23:00** | **Submitted / Deployed** | `project-2/` (Cold-Chain Inventory, PostgreSQL 16, OTel/Tempo, Staged CI/CD & On-Call Agent — 24/24 rubric) |
+| **Peer Review 2**| **Capstone Project 2 Peer Evaluations** | **Due: 2026-11-23 23:00** | **Completed** | `project-2-peer-review-evaluations.md` (3 peer submissions `#14617`, `#14618`, `#14619` reviewed) |
 
 ---
 
