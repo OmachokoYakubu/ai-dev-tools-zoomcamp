@@ -12,7 +12,7 @@
 
 | Assignment | Peer Pseudonym | Project / Repository | Evaluated Commit | Portal Link | Score |
 | :--- | :--- | :--- | :---: | :--- | :---: |
-| **#14617** | **Kind Swartz** | [`daler-rahimov/WinFlow`](https://github.com/daler-rahimov/WinFlow) *(HTTP 404 — Private / Not Found)* | `650ef60` | [Eval #14617](https://courses.datatalks.club/ai-dev-tools-2026/project/project2/eval/14617) | **0 / 24** |
+| **#14617** | **Kind Swartz** | [**Agrivanta** (`TheRevenant04/agrivanta`)](https://github.com/TheRevenant04/agrivanta) | `6c2dc95` | [Eval #14617](https://courses.datatalks.club/ai-dev-tools-2026/project/project2/eval/14617) | **21 / 24** |
 | **#14618** | **Brave Lederberg** | [**FinPath** (`alicephoo/FinPath_Website`)](https://github.com/alicephoo/FinPath_Website) | `30d2d90` | [Eval #14618](https://courses.datatalks.club/ai-dev-tools-2026/project/project2/eval/14618) | **21 / 24** |
 | **#14619** | **Jovial Bassi** | [**ContactHub** (`Source-C0de/contact-connect`)](https://github.com/Source-C0de/contact-connect) | `94fd20f` | [Eval #14619](https://courses.datatalks.club/ai-dev-tools-2026/project/project2/eval/14619) | **14 / 24** |
 
@@ -20,31 +20,45 @@
 
 ## 2. Comparative Score Matrix (12 Criteria)
 
-| # | Criterion | Max Pts | #14617 (`WinFlow`) | #14618 (`FinPath`) | #14619 (`ContactHub`) |
+| # | Criterion | Max Pts | #14617 (`Agrivanta`) | #14618 (`FinPath`) | #14619 (`ContactHub`) |
 | :---: | :--- | :---: | :---: | :---: | :---: |
-| **1** | **Problem Description** | 2 | 0 | **2** | **2** |
-| **2** | **Product Specification** | 2 | 0 | **2** | **1** |
-| **3** | **Agent Team Specification** | 2 | 0 | **2** | **0** |
-| **4** | **Context Management** | 2 | 0 | **2** | **0** |
-| **5** | **Application** | 2 | 0 | **2** | **2** |
-| **6** | **Testing** | 2 | 0 | **2** | **1** |
-| **7** | **Containerization** | 2 | 0 | **2** | **2** |
-| **8** | **Deployment** | 2 | 0 | **2** | **1** |
-| **9** | **CI/CD** | 3 | 0 | **1** | **0** |
-| **10** | **Observability** | 2 | 0 | **1** | **2** |
-| **11** | **Alerting on User Impact** | 1 | 0 | **1** | **1** |
-| **12** | **On-Call Agent** | 2 | 0 | **2** | **2** |
-| | **Total Score** | **24** | **0 / 24** | **21 / 24** | **14 / 24** |
+| **1** | **Problem Description** | 2 | **2** | **2** | **2** |
+| **2** | **Product Specification** | 2 | **2** | **2** | **1** |
+| **3** | **Agent Team Specification** | 2 | **2** | **2** | **0** |
+| **4** | **Context Management** | 2 | **2** | **2** | **0** |
+| **5** | **Application** | 2 | **2** | **2** | **2** |
+| **6** | **Testing** | 2 | **2** | **2** | **1** |
+| **7** | **Containerization** | 2 | **2** | **2** | **2** |
+| **8** | **Deployment** | 2 | **1** | **2** | **1** |
+| **9** | **CI/CD** | 3 | **1** | **1** | **0** |
+| **10** | **Observability** | 2 | **2** | **1** | **2** |
+| **11** | **Alerting on User Impact** | 1 | **1** | **1** | **1** |
+| **12** | **On-Call Agent** | 2 | **2** | **2** | **2** |
+| | **Total Score** | **24** | **21 / 24** | **21 / 24** | **14 / 24** |
 
 ---
 
-## 3. Detailed Evaluation #14617 — `WinFlow` (Kind Swartz)
+## 3. Detailed Evaluation #14617 — `Agrivanta` (Kind Swartz)
 
-- **Repository URL:** `https://github.com/daler-rahimov/WinFlow`
-- **Commit ID:** `650ef60`
-- **Accessibility Check:** Accessing `https://github.com/daler-rahimov/WinFlow` via browser, `git clone`, and the GitHub REST API (`users/daler-rahimov/repos`) returns **HTTP 404 (Repository not found)**. Because the repository is private or deleted, none of the 12 criteria can be inspected or verified.
+- **Repository URL:** `https://github.com/TheRevenant04/agrivanta`
+- **Commit ID:** `6c2dc95`
+
+### Criterion-by-Criterion Breakdown
+1. **Problem Description (2/2 — `radio-197-3`):** `README.md` clearly explains the commercial crop-farm operations, inventory, and crop-cycle profitability problem, system features, data domains, and request/AI analyst flows.
+2. **Product Specification (2/2 — `radio-198-3`):** `_docs/plan.md` and `_docs/tasks.md` (63 tasks) are paired with public GitHub Issues/PRs (`#1`–`#152`) and a dedicated backlog MCP server (`mcp-server/server.py`) + issue orchestrator (`custom-agent/agent.py`).
+3. **Agent Team Specification (2/2 — `radio-199-3`):** `_docs/process.md`, `_docs/team/` (`pm.md`, `software-engineer.md`, `qa-engineer.md`, `code-reviewer.md`), `.agents/agents/`, `.opencode/agent/`, and `custom-agent/agent.py` define a complete 4-role multi-agent workflow.
+4. **Context Management (2/2 — `radio-200-3`):** `AGENTS.md` defines repository conventions and links to modular policy docs (`_docs/plan.md`, `_docs/tasks.md`, `_docs/process.md`, `_docs/permissions.md`, `_docs/branching-strategy.md`, `_docs/commit-message-guidelines.md`, `_docs/agent-extension-pack.md`).
+5. **Application (2/2 — `radio-201-3`):** Full-stack React 18 + TypeScript (Vite) frontend + Django 5.2 / DRF backend + PostgreSQL 17 + Redis 7 + Celery worker (`docker-compose.yml`).
+6. **Testing (2/2 — `radio-202-3`):** Unit and integration test suites for both backend (`backend/api/tests/unit`, `backend/api/tests/integration`) and frontend (`frontend/src/tests/unit`, `frontend/src/tests/integration`) plus Playwright E2E (`frontend/e2e/success-workflow.spec.ts`).
+7. **Containerization (2/2 — `radio-203-3`):** `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml`, `docker-compose.ci.yml`, and `docker-compose.prod.yml` boot the entire application stack with a single command.
+8. **Deployment (1/2 — `radio-204-2`):** `docs/deployment.md` and `docs/ci-cd.md` thoroughly document cloud deployment options (AWS ECS, Azure Container Apps, GCP Cloud Run, Kubernetes), and explicitly note: *"There is currently no active cloud deployment or automated CD pipeline in this repository."*
+9. **CI/CD (1/3 — `radio-205-2`):** `.github/workflows/ci.yml` runs backend unit tests, frontend lint/build/unit tests, and full Docker Compose integration + Playwright E2E checks on every pull request (`docs/ci-cd.md`: *"CD is not yet implemented in this repository"*).
+10. **Observability (2/2 — `radio-206-3`):** `backend/api/observability.py`, `backend/api/telemetry.py`, and `observability/docker-compose.yml` (OpenTelemetry Collector, Tempo, Loki, Prometheus, and provisioned Grafana dashboards) correlate metrics, traces, and structured logs with PII redaction.
+11. **Alerting on User Impact (1/1 — `radio-207-2`):** `observability/prometheus/alerts.yml` defines user-impact alert rules.
+12. **On-Call Agent (2/2 — `radio-208-2`):** `on-call-engineer/on_call_agent.py` (tested in `on-call-engineer/tests/test_on_call_agent.py`) wakes up on alerts to diagnose and remediate incidents.
+
 - **Note to Peer:**
-  > Unfortunately, `https://github.com/daler-rahimov/WinFlow` returns HTTP 404 (Repository not found) when accessed publicly or via `git clone` during the peer evaluation window. Please make sure the repository visibility is set to Public on GitHub so reviewers can inspect your code, specifications, tests, and observability setup.
+  > Outstanding AI-native engineering! The Module 5 extension pack (`.agents/skills/`, `.opencode/plugins/guardrails.js`, `mcp-server/server.py`, and `custom-agent/agent.py`), full OpenTelemetry Collector + Tempo + Loki + Prometheus + Grafana observability stack, and `on-call-engineer/on_call_agent.py` are top-notch. Adding an automated dev CD deployment and manual prod promotion gate in GitHub Actions would bring this to a full 24/24.
 
 ---
 
